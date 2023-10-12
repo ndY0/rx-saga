@@ -1,8 +1,9 @@
-import { Observable, Subject, catchError, mergeMap, mergeAll, from, share } from "rxjs";
+import { Observable, Subject, catchError, map, mergeMap, share } from "rxjs";
 import { IError } from "../error/error.interface";
 import ICommandBus from "../bus/command.bus.interface";
 import { SagaOperatorFunction } from "../operators/saga-operator-function";
 import pipeFromArray from "../helpers/pipe-from-array";
+import { ConstructorArgsExceptFirst } from "../types";
 
 export default class SagaSubject<C, R, E extends IError, C2, R2> {
 
@@ -13,9 +14,15 @@ export default class SagaSubject<C, R, E extends IError, C2, R2> {
   private internalError: Observable<R2>;
   private internalUnexpectedError: Observable<any>;
 
-  constructor(private readonly commandBus: ICommandBus, mapError: (error: E) => C2) {
+  constructor(
+    private readonly commandBus: ICommandBus,
+    mapError: (error: E) => C2,
+    mapResponse: (busResponse: any) => R,
+    mapErrorResponse: (busResponse: any) => R2
+  ) {
     this.internal = this.internalSubject.pipe(
-      mergeMap((command: C) => this.commandBus.exec<C, R>(command)),
+      mergeMap((command: C) => this.commandBus.exec<C, any>(command)),
+      map((value) => mapResponse(value)),
       catchError((err: E, caught) => {
         this.internalErrorSubject.next(mapError(err));
         return caught;
@@ -23,7 +30,8 @@ export default class SagaSubject<C, R, E extends IError, C2, R2> {
       share()
     )
     this.internalError = this.internalErrorSubject.pipe(
-      mergeMap((command: C2) => this.commandBus.exec<C2, R2>(command)),
+      mergeMap((command: C2) => this.commandBus.exec<C2, any>(command)),
+      map((value) => mapErrorResponse(value)),
       catchError((err: Error, caught) => {
         this.internalUnexpectedErrorSubject.next(err);
         return caught;
@@ -34,6 +42,13 @@ export default class SagaSubject<C, R, E extends IError, C2, R2> {
   }
   pipe(): SagaSubject<C, R, E, C2, R2>;
   pipe<Cbis, Rbis, Ebis extends IError, C2bis, R2bis>(op1: SagaOperatorFunction<C, R, E, C2, R2, Cbis, Rbis, Ebis, C2bis, R2bis>): SagaSubject<Cbis, Rbis, Ebis, C2bis, R2bis>;
+  pipe<
+    Cbis, Rbis, Ebis extends IError, C2bis, R2bis,
+    Cbis1, Rbis1, Ebis1 extends IError, C2bis1, R2bis1
+  >(
+    op1: SagaOperatorFunction<C, R, E, C2, R2, Cbis, Rbis, Ebis, C2bis, R2bis>,
+    op2: SagaOperatorFunction<Cbis, Rbis, Ebis, C2bis, R2bis, Cbis1, Rbis1, Ebis1, C2bis1, R2bis1>
+  ): SagaSubject<Cbis1, Rbis1, Ebis1, C2bis1, R2bis1>;
   // pipe<A, B>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>): Observable<B>;
   // pipe<A, B, C>(op1: OperatorFunction<T, A>, op2: OperatorFunction<A, B>, op3: OperatorFunction<B, C>): Observable<C>;
   // pipe<A, B, C, D>(
@@ -126,6 +141,6 @@ export default class SagaSubject<C, R, E extends IError, C2, R2> {
     return this.internalUnexpectedError;
   }
   liftBus<Cbis, Rbis, Ebis extends IError, C2bis, R2bis>(Saga: typeof SagaSubject<Cbis, Rbis, Ebis, C2bis, R2bis>) {
-    return (constructorArgs: ConstructorParameters<typeof SagaSubject<Cbis, Rbis, Ebis, C2bis, R2bis>>[1]) => new Saga(this.commandBus, constructorArgs);
+    return (...constructorArgs: ConstructorArgsExceptFirst<typeof SagaSubject<Cbis, Rbis, Ebis, C2bis, R2bis>>) => new Saga(this.commandBus, ...constructorArgs);
   }
 }

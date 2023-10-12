@@ -5,7 +5,8 @@ const config: Config = {
   verbose: true,
   coverageReporters: ['lcov'],
   coverageDirectory: './coverage',
-  collectCoverageFrom: ['./src/**/*.ts', '!./src/**/*.{d,interface}.ts']
+  collectCoverageFrom: ['./src/**/*.ts', '!./src/**/*.{d,interface,mock,test}.ts', '!./src/**/index.ts'],
+  collectCoverage: true
 };
 
 export default config;
