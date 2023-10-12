@@ -15,7 +15,6 @@ const bufferLink = <C, R, E extends IError, C2, R2, Cbis, Rbis, Ebis extends IEr
         saga.toObservable()
         .subscribe({
             next(value: R) {
-                // const buffer: Cbis[] = [];
                 map(value).pipe(reduce((acc, curr) => (acc.push(curr), acc), [] as Cbis[])).subscribe({
                     next(innerValue) {
                         downstream.next(innerValue);
