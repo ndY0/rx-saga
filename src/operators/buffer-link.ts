@@ -1,4 +1,4 @@
-import { Observable, catchError, mergeMap, reduce } from "rxjs";
+import { EMPTY, Observable, catchError, reduce } from "rxjs";
 import { IError } from "../error/error.interface"
 import SagaSubject from "../observable/saga-observable"
 import { SagaOperatorFunction } from "./saga-operator-function";
@@ -15,12 +15,15 @@ const bufferLink = <C, R, E extends IError, C2, R2, Cbis, Rbis, Ebis extends IEr
         saga.toObservable()
         .subscribe({
             next(value: R) {
-                map(value).pipe(reduce((acc, curr) => (acc.push(curr), acc), [] as Cbis[])).subscribe({
+                map(value).pipe(
+                    catchError((err, caught) => {
+                        saga.unexpectedError(err);
+                        return EMPTY;
+                    }),
+                    reduce((acc, curr) => (acc.push(curr), acc), [] as Cbis[]),
+                ).subscribe({
                     next(innerValue) {
                         downstream.next(innerValue);
-                    },
-                    error(err) {
-                        saga.unexpectedError(err);
                     },
                 })
             },

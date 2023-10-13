@@ -21,3 +21,4 @@ const pipeFromArray = <T, R>(fns: Array<UnaryFunction<T, R>>): UnaryFunction<T, 
 }
 
 export default pipeFromArray;
+export { identity }
