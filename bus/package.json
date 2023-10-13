@@ -1,0 +1,8 @@
+{
+    "name": "rx-saga/bus",
+    "main": "../lib/bus/command.bus.interface.js",
+    "module": "../lib/bus/command.bus.interface.js",
+    "types": "../lib/bus/command.bus.interface.d.ts",
+    "sideEffects": false
+  }
+  

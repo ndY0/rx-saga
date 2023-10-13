@@ -1,0 +1,8 @@
+{
+    "name": "rx-saga/error",
+    "main": "../lib/error/error.interface.js",
+    "module": "../lib/error/error.interface.js",
+    "types": "../lib/error/error.interface.d.ts",
+    "sideEffects": false
+  }
+  

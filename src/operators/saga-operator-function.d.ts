@@ -1,4 +1,4 @@
-import { SagaSubject } from "../observable/saga-observable"
+import SagaSubject from "../observable/saga-observable"
 
 interface UnaryFunction<T, R> {
     (source: T): R;
