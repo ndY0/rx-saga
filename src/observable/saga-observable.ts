@@ -1,4 +1,4 @@
-import { Observable, Subject, catchError, map, mergeMap, share } from "rxjs";
+import { Observable, Subject, catchError, map, merge, mergeMap, share } from "rxjs";
 import { IError } from "../error/error.interface";
 import ICommandBus from "../bus/command.bus.interface";
 import { SagaOperatorFunction } from "../operators/saga-operator-function";
@@ -8,7 +8,8 @@ import { ConstructorArgsExceptFirst } from "../types";
 export default class SagaSubject<C, R, E extends IError, C2, R2> {
 
   private internalSubject = new Subject<C>();
-  private internalErrorSubject = new Subject<C2>();
+  private internalErrorSubject = new Subject<E>();
+  private internalCommandErrorSubject = new Subject<C2>();
   private internalUnexpectedErrorSubject = new Subject<any>();
   private internal: Observable<R>;
   private internalError: Observable<R2>;
@@ -24,20 +25,21 @@ export default class SagaSubject<C, R, E extends IError, C2, R2> {
       mergeMap((command: C) => this.commandBus.exec<C, any>(command)),
       map((value) => mapResponse(value)),
       catchError((err: E, caught) => {
-        this.internalErrorSubject.next(mapError(err));
+        this.internalErrorSubject.next(err);
         return caught;
       }),
       share()
     )
-    this.internalError = this.internalErrorSubject.pipe(
-      mergeMap((command: C2) => this.commandBus.exec<C2, any>(command)),
-      map((value) => mapErrorResponse(value)),
-      catchError((err: Error, caught) => {
-        this.internalUnexpectedErrorSubject.next(err);
-        return caught;
-      }),
-      share()
-    )
+    this.internalError = merge(this.internalCommandErrorSubject, this.internalErrorSubject.pipe(
+      map(mapError))).pipe(
+        mergeMap((command: C2) => this.commandBus.exec<C2, any>(command)),
+        map((value) => mapErrorResponse(value)),
+        catchError((err: Error, caught) => {
+          this.internalUnexpectedErrorSubject.next(err);
+          return caught;
+        }),
+        share()
+      )
     this.internalUnexpectedError = this.internalUnexpectedErrorSubject.pipe(share());
   }
   pipe(): SagaSubject<C, R, E, C2, R2>;
@@ -123,10 +125,11 @@ export default class SagaSubject<C, R, E extends IError, C2, R2> {
   complete(): void {
     this.internalSubject.complete();
     this.internalErrorSubject.complete();
+    this.internalCommandErrorSubject.complete();
     this.internalUnexpectedErrorSubject.complete();
   }
   error(error: C2): void {
-    this.internalErrorSubject.next(error);
+    this.internalCommandErrorSubject.next(error);
   }
   unexpectedError(error: any): void {
     this.internalUnexpectedErrorSubject.next(error);
