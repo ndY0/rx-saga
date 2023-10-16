@@ -193,6 +193,10 @@ saga.next(new Command(0));
 saga.complete();
 ```
 
+the marble diagram of the class : 
+
+<img src="doc/assets/sagasubjectmarble.drawio.svg">
+
 ### operators
 
 operators are the fundamental tools to chain, split and merge different commands together.
