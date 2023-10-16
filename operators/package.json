@@ -1,0 +1,8 @@
+{
+    "name": "rx-saga/operators",
+    "main": "../lib/operators/index.js",
+    "module": "../lib/operators/index.js",
+    "types": "../lib/operators/index.d.ts",
+    "sideEffects": false
+  }
+  
